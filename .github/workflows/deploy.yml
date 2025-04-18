@@ -1,0 +1,25 @@
+# .github/workflows/deploy.yml
+name: Deploy
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and Push
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+        run: |
+          docker build -t yourusername/mern-backend .
+          echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+          docker push yourusername/mern-backend
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to K3s
+        env:
+          KUBECONFIG: ${{ secrets.KUBECONFIG }}
+        run: |
+          kubectl set image deployment/backend backend=yourusername/mern-backend
